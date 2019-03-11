@@ -103,7 +103,6 @@ config
 
 # Installer additional files
 installer/dex/dex_config.yaml
-installer/k8s/ca-ing-dex.crt
 installer/k8s/cluster.yaml
 installer/k8s/config.yaml
 installer/k8s/config_oidc.yaml
@@ -111,16 +110,15 @@ installer/k8s/oidc.yaml
 installer/minio/minio_ing.yaml
 installer/validate/__pycache__/
 installer/utils/dns_utils/.venvaws
+installer/utils/route53/route_record.json
+installer/helm-temp-dir
+installer/hooks/dns_entry_hook.sh
+helm-deployment/*/charts
+helm-deployment/*/*.lock
 
-helm-deployment/*/*/*.crt
-helm-deployment/*/*/*.key
-helm-deployment/*/*/*.csr
-helm-deployment/management-api-subchart/certs/certindex
-helm-deployment/management-api-subchart/certs/certserial
-helm-deployment/management-api-subchart/certs/crlnumber
-helm-deployment/management-api-subchart/certs/crlnumber.old
-helm-deployment/management-api-subchart/certs/dex_ca.yaml
-helm-deployment/management-api-subchart/certs/root.crl.pem
-helm-deployment/minio-subchart/charts/
-helm-deployment/minio-subchart/requirements.lock
-dex_ca.yaml
+**/*.pem
+**/*.crt
+**/*.csr
+**/*.key
+**/*.pb
+scripts/*.npy

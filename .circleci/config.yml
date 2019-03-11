@@ -26,14 +26,14 @@ jobs:
             . ~/inference-model-manager/.venv/bin/activate
             pip install -r management/requirements.txt
             cd ~/inference-model-manager/management/ && python setup.py test
-  style_crd:
+  style_and_unit_tests_crd:
     docker:
       - image: circleci/golang:1.11-node
     working_directory: ~/inference-model-manager
     steps:
       - checkout
       - run:
-          name: gometalinter
+          name: gometalinter and unit tests
           command: |
             cd ~/inference-model-manager/server-controller
             mkdir -p /go/src/github.com/IntelAI/inference-model-manager/server-controller
@@ -41,7 +41,7 @@ jobs:
             cd /go/src/github.com/IntelAI/inference-model-manager/server-controller
             dep ensure -v
             make install-linter
-            make lint
+            make test
 
   functional_tests:
     docker:
@@ -100,6 +100,7 @@ jobs:
           name: Generate certificates for dex external service
           command: |
             cd ~/inference-model-manager/helm-deployment/dex-subchart/certs
+            ./generate-ing-ca.sh
             ./generate-ing-dex-certs.sh
       - run:
           name: Create k8s cluster
@@ -125,9 +126,9 @@ jobs:
             
             sed -i "s/toreplacebyclustername/${CLUSTER_NAME_SHORT}/g" desiredcni.yaml
             sed -i "s@toreplacebyissuer@${ISSUER}@g" desiredcni.yaml
-            cp ~/inference-model-manager/helm-deployment/dex-subchart/certs/ca-ing-dex.crt .
-            sed -i 's/^/      /' ca-ing-dex.crt
-            sed -i -e '/replace_by_certificate/{r ca-ing-dex.crt' -e 'd}' desiredcni.yaml
+            cp ~/inference-model-manager/helm-deployment/dex-subchart/certs/ca-ing.crt .
+            sed -i 's/^/      /' ca-ing.crt
+            sed -i -e '/replace_by_certificate/{r ca-ing.crt' -e 'd}' desiredcni.yaml
             kops create -f desiredcni.yaml
             kops update cluster ${CLUSTER_NAME} --yes
             sleep 300
@@ -142,6 +143,10 @@ jobs:
             ./get_helm.sh
             helm init --service-account tiller --upgrade
             sleep 20
+
+            wget https://github.com/mikefarah/yq/releases/download/2.2.1/yq_linux_amd64
+            chmod a+x yq_linux_amd64
+            sudo mv yq_linux_amd64 /usr/local/bin/yq
       - run:
           name: Check management api images version
           command: |
@@ -200,38 +205,38 @@ jobs:
             while [ "$STATUS" = "INSYNC" ]; do sleep 10; export STATUS=$(aws route53 get-change --id `echo ${AWS_DNS_ID} | tr -d "\""` | jq '.ChangeInfo.Status'); echo $STATUS; done
             deactivate
       - run:
+          name: Install tests requirements
+          command: |
+            . ~/inference-model-manager/.venv/bin/activate
+            pip install -q --upgrade pip
+            pip install -q -r ~/inference-model-manager/tests/requirements.txt
+            pip install -q -r ~/inference-model-manager/scripts/requirements.txt
+      - run:
           name: Install Certificates
           command: |
-            sudo cp ~/inference-model-manager/helm-deployment/management-api-subchart/certs/ca-ing-mgt-api.crt /usr/local/share/ca-certificates/ca-ing-mgt-api.crt
-            sudo cp ~/inference-model-manager/helm-deployment/dex-subchart/certs/ca-ing-dex.crt /usr/local/share/ca-certificates/ca-ing-dex.crt
+            sudo cp ~/inference-model-manager/helm-deployment/management-api-subchart/certs/ca-ing.crt /usr/local/share/ca-certificates/
             sudo update-ca-certificates
-            # Commands below are necessary to enable developers debug their builds
-            echo "MANAGEMENT API CA"
-            cat ~/inference-model-manager/helm-deployment/management-api-subchart/certs/ca-ing-mgt-api.crt
-            echo "DEX CA"
-            cat ~/inference-model-manager/helm-deployment/dex-subchart/certs/ca-ing-dex.crt
-            echo 'export CERT=`cat ~/inference-model-manager/helm-deployment/management-api-subchart/certs/ca-cert-tf.crt | base64 -w0`' >> $BASH_ENV
+            echo "CA ing:"
+            cat ~/inference-model-manager/helm-deployment/management-api-subchart/certs/ca-ing.crt
             echo 'export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt' >> $BASH_ENV
+            echo 'export CERT=`cat ~/inference-model-manager/helm-deployment/management-api-subchart/certs/ca-cert-tf.crt | base64 -w0`' >> $BASH_ENV
       - store_artifacts:
           path: ~/inference-model-manager/helm-deployment/dex-subchart/certs
       - store_artifacts:
           path: ~/inference-model-manager/helm-deployment/management-api-subchart/certs
-      - run:
+      - run:        
           name: Check if platform is ready for tests, fail build if not ready after 10 min
           command: |
             . ~/inference-model-manager/.venv/bin/activate
-            pip install -q -r ~/inference-model-manager/tests/requirements.txt
             cd ~/inference-model-manager/scripts
             . ./imm_utils.sh
             get_token admin
-            while [ "$TENANTS" != "There are no tenants present on platform" ]; do sleep 5; TENANTS=$(./imm ls t); done
+            while [[ "$TENANTS" != "There are no tenants present on platform" ]]; do TENANTS=`./imm ls t`; sleep 5; done
           no_output_timeout: 10m
       - run:
           name: Run imm test
           command: |
             . ~/inference-model-manager/.venv/bin/activate
-            pip install -q -r ~/inference-model-manager/tests/requirements.txt
-            pip install -q -r ~/inference-model-manager/examples/grpc_client/requirements.txt
             cd ~/inference-model-manager/scripts
             ./test_imm.sh
       - run:
@@ -239,7 +244,6 @@ jobs:
           command: |
             . ~/inference-model-manager/.venv/bin/activate
             cd ~/inference-model-manager/tests
-            pip install -q -r requirements.txt
             . run_test.sh
       - run:
           name: Set images tags to latest on master
@@ -293,4 +297,4 @@ workflows:
     jobs:
       - style_and_unit_tests_mgt_api
       - functional_tests
-      - style_crd
+      - style_and_unit_tests_crd
