@@ -55,6 +55,7 @@ fill_template "<minio_endpoint_url>" http://$MINIO_ENDPOINT values.yaml
 fill_template "<groupName>" admin values.yaml
 fill_template "<adminScope>" admin values.yaml
 fill_template "<platformAdmin>" admin values.yaml
+fill_template "<passK8Stoken>" $PASS_K8S_TOKEN values.yaml
 
 helm install .
 show_result $? "Installation of Management API succeded" "Failed to install Management API"
