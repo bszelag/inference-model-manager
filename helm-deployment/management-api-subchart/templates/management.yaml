@@ -22,6 +22,8 @@ spec:
         ports:
         - containerPort: 443
         env:
+        - name: USE_SERVICE_ACCOUNT
+          value: {{ .Values.use_service_account }}
         - name: MINIO_ENDPOINT_ADDR
           valueFrom:
             secretKeyRef:
