@@ -24,7 +24,7 @@ domain=""
 gce_zone="us-west1"
 quiet="no"
 
-while getopts "h?qsk:d:z:g:p" opt; do
+while getopts "h?qsk:d:z:g:pt" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -44,6 +44,9 @@ while getopts "h?qsk:d:z:g:p" opt; do
 	    ;;
     p)  export PROXY=$OPTARG
 	    ;;
+    t)  export SKIP_K8S_INSTALLATION="True"
+        export USE_SERVICE_ACCOUNT="True"
+      ;;    
     esac
 done
 
