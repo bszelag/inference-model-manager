@@ -38,14 +38,14 @@ while getopts "h?qsk:d:z:g:pt" opt; do
         ;;
     z)  gce_zone=$OPTARG
         ;;      
-    s)  export SKIP_K8S_INSTALLATION="True"
+    s)  export SKIP_K8S_INSTALLATION="true"
         ;;
     g)  export GCE_USER=$OPTARG
 	    ;;
     p)  export PROXY=$OPTARG
 	    ;;
-    t)  export SKIP_K8S_INSTALLATION="True"
-        export USE_SERVICE_ACCOUNT="True"
+    t)  export SKIP_K8S_INSTALLATION="true"
+        export USE_SERVICE_ACCOUNT="true"
       ;;    
     esac
 done
