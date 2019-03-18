@@ -21,7 +21,6 @@ get_token() {
 	user=$1
   TOKEN=""
   if [ ! -z "$SINGLE_TENANT_USER" ]; then    
-      echo "Getting token for user $SINGLE_TENANT_USER"
     	TOKEN=`python -W ignore ../tests/management_api_tests/authenticate.py $SINGLE_TENANT_USER`
   else
 	    echo "Get $user token"
