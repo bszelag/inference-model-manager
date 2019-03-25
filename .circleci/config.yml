@@ -61,7 +61,7 @@ jobs:
             export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
             echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
             curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-            sudo apt-get update && sudo apt-get install -y google-cloud-sdk
+            sudo apt-get update && sudo apt-get install -y google-cloud-sdk 
             sudo apt-get install kubectl
             sudo apt-get update && sudo apt-get --only-upgrade install kubectl google-cloud-sdk google-cloud-sdk-app-engine-grpc google-cloud-sdk-pubsub-emulator \
             google-cloud-sdk-app-engine-go google-cloud-sdk-cloud-build-local google-cloud-sdk-datastore-emulator google-cloud-sdk-app-engine-python google-cloud-sdk-cbt \
@@ -116,21 +116,6 @@ jobs:
             cd ~/inference-model-manager/
             python3 -m venv .venv
       - run:
-          name: Choose region
-          command: |
-            cd ~/inference-model-manager/installer/kops
-            export BRANCH=$(git symbolic-ref --short HEAD)
-            echo $REGION_JSON
-            if [ "$BRANCH" != "master" ]
-            then
-               sudo apt-get install jq
-               export GCE_REGION=`jq --arg namearg "$CIRCLE_USERNAME" '.[$namearg]' <<< "$REGION_JSON" | tr -d '"'`
-               if [ "$GCE_REGION" != "null" ]
-               then
-                 sed -i "s/us-west1/${GCE_REGION}/g" desiredcni_ci.yaml
-               fi
-            fi
-      - run:
           name: Prepare environment variables
           command: |
             echo 'export BRANCH_SHORT=`echo ${CIRCLE_BRANCH} |tr -d "\-\_" |cut -c1-9`' >> $BASH_ENV
@@ -143,7 +128,7 @@ jobs:
             echo 'export CLUSTER_NAME_SHORT_TP=`echo ${CLUSTER_NAME_SHORT} | cut -c 1-20`' >> $BASH_ENV
             echo 'export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"' >> $BASH_ENV
             echo 'export DEX_DOMAIN_NAME="dex.${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com"' >> $BASH_ENV
-            echo 'export MGMT_DOMAIN_NAME="mgmt.${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com"' >> $BASH_ENV
+            echo 'export MGMT_DOMAIN_NAME="mgt.${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com"' >> $BASH_ENV
             echo 'export DOMAIN_NAME="${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com"' >> $BASH_ENV
             echo 'export ISSUER="https://dex.${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com:443/dex"' >> $BASH_ENV
             echo 'export MGMT_IMAGE="gcr.io/constant-cubist-173123/management-api"' >> $BASH_ENV
@@ -158,14 +143,17 @@ jobs:
             echo 'export MINIO_SECRET_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"' >> $BASH_ENV
             echo 'export DEX_URL="https://${DEX_DOMAIN_NAME}:443"' >> $BASH_ENV
       - run:
-          name: Generate certificates for dex external service
+          name: Install tests requirements
           command: |
-            cd ~/inference-model-manager/helm-deployment/dex-subchart/certs
-            ./generate-ing-ca.sh
-            ./generate-ing-dex-certs.sh
+            . ~/inference-model-manager/.venv/bin/activate
+            pip install -q --upgrade pip
+            pip install -q -r ~/inference-model-manager/tests/requirements.txt
+            pip install -q -r ~/inference-model-manager/scripts/requirements.txt
+            pip install -q awscli --upgrade
       - run:
-          name: Create k8s cluster
+          name: Install required dependencies
           command: |
+            . ~/inference-model-manager/.venv/bin/activate
             echo "${GOOGLE_IMM_KEY}" | base64 -d > /tmp/gcp-key.json
             echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
             curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
@@ -176,105 +164,32 @@ jobs:
             google-cloud-sdk-bigtable-emulator google-cloud-sdk-app-engine-python-extras google-cloud-sdk-datalab google-cloud-sdk-app-engine-java
             gcloud auth activate-service-account --key-file /tmp/gcp-key.json
             gcloud config set project "${GOOGLE_PROJECT_ID}"
-            mkdir temp
-            cd temp
-            wget -O kops https://github.com/kubernetes/kops/releases/download/$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)/kops-linux-amd64
-
-            chmod +x ./kops
-            sudo mv ./kops /usr/local/bin/
             export PROJECT=`gcloud config get-value project`
-            cd ~/inference-model-manager/installer/kops
-            
-            sed -i "s/toreplacebyclustername/${CLUSTER_NAME_SHORT}/g" desiredcni_ci.yaml
-            sed -i "s@toreplacebyissuer@${ISSUER}@g" desiredcni_ci.yaml
-            cp ~/inference-model-manager/helm-deployment/dex-subchart/certs/ca-ing.crt .
-            sed -i 's/^/      /' ca-ing.crt
-            sed -i -e '/replace_by_certificate/{r ca-ing.crt' -e 'd}' desiredcni_ci.yaml
-            kops create -f desiredcni_ci.yaml
-            kops update cluster ${CLUSTER_NAME} --yes
-            sleep 300
-            kubectl create -f https://git.io/weave-kube-1.6
-            
-            sleep 250            
-            kubectl create serviceaccount --namespace kube-system tiller
-            kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-            curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
-            chmod 700 get_helm.sh
-            sleep 150
-            ./get_helm.sh
-            helm init --service-account tiller --upgrade
-            sleep 20
-
-            wget https://github.com/mikefarah/yq/releases/download/2.2.1/yq_linux_amd64
-            chmod a+x yq_linux_amd64
-            sudo mv yq_linux_amd64 /usr/local/bin/yq
-      - run:
-          name: Download dependencies and deploy platfrom
-          command: |
+            cd ~/inference-model-manager/
             export MGMT_TAG=$(find management/ -type f -exec sha256sum {} \; | cut -d " " -f1 | sort | xargs echo | sha256sum | cut -d " " -f1)
             export CRD_TAG=$(find server-controller/ -type f -exec sha256sum {} \; | cut -d " " -f1 | sort | xargs echo | sha256sum | cut -d " " -f1)
-            cd ~/inference-model-manager/tests/deployment
-            sed -i "s@toreplacedbyissuer@${ISSUER}@g" dex_config.yaml
-            cd ~/inference-model-manager/tests/deployment
-            ./deployment_platform.sh
-            sleep 150
-      - run:
-          name: Create record in AWS Route53
-          command: |    
-            cd ~/inference-model-manager/installer/utils/route53/
-            while [ -z $ING_IP ]; do sleep 10; ING_IP=$(kubectl get ing -o=jsonpath='{.items[0].status.loadBalancer.ingress..ip}' -n mgt-api); done
-            
-            virtualenv .venvaws -p python3
-            . .venvaws/bin/activate
-            pip install awscli --upgrade 
-
-            export AWS_DNS=`./apply.sh CREATE ${ING_IP} ${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com`
-            cat route_record.json
-            export AWS_DNS_ID=$(echo $AWS_DNS | jq '.ChangeInfo.Id')
-            echo ${AWS_DNS_ID} 
-            sleep 30
-            while [ "$STATUS" = "INSYNC" ]; do sleep 10; export STATUS=$(aws route53 get-change --id `echo ${AWS_DNS_ID} | tr -d "\""` | jq '.ChangeInfo.Status'); echo $STATUS; done
-            deactivate
-      - run:
-          name: Install tests requirements
-          command: |
-            . ~/inference-model-manager/.venv/bin/activate
-            pip install -q --upgrade pip
-            pip install -q -r ~/inference-model-manager/tests/requirements.txt
-            pip install -q -r ~/inference-model-manager/scripts/requirements.txt
-      - run:
-          name: Install Certificates
-          command: |
-            sudo cp ~/inference-model-manager/helm-deployment/management-api-subchart/certs/ca-ing.crt /usr/local/share/ca-certificates/
-            sudo update-ca-certificates
-            echo "CA ing:"
-            cat ~/inference-model-manager/helm-deployment/management-api-subchart/certs/ca-ing.crt
-            echo 'export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt' >> $BASH_ENV
-            echo 'export CERT=`cat ~/inference-model-manager/helm-deployment/management-api-subchart/certs/ca-cert-tf.crt | base64 -w0`' >> $BASH_ENV
+            cd ~/inference-model-manager/installer/
+            mv ./hooks/example_dns_entry_hook.sh ./hooks/dns_entry_hook.sh
+            ./prerequisites_ubuntu.sh
+            export BRANCH=$(git symbolic-ref --short HEAD)
+            echo $REGION_JSON
+            if [[ "$BRANCH" != "master" ]]; then
+               sudo apt-get install jq
+               export GCE_REGION=`jq --arg namearg "$CIRCLE_USERNAME" '.[$namearg]' <<< "$REGION_JSON" | tr -d '"'`
+            else
+               export GCE_REGION=us-west1
+            fi
+            ./install.sh -d ${DOMAIN_NAME} -k ${CLUSTER_NAME_SHORT} -z ${GCE_REGION} -t
       - store_artifacts:
-          path: ~/inference-model-manager/helm-deployment/dex-subchart/certs
+          path: ~/inference-model-manager/installer/helm-temp-dir/dex-subchart/certs
       - store_artifacts:
-          path: ~/inference-model-manager/helm-deployment/management-api-subchart/certs
-      - run:        
-          name: Check if platform is ready for tests, fail build if not ready after 10 min
-          command: |
-            . ~/inference-model-manager/.venv/bin/activate
-            cd ~/inference-model-manager/scripts
-            . ./imm_utils.sh
-            get_token admin
-            while [[ "$TENANTS" != "There are no tenants present on platform" ]]; do TENANTS=`./imm ls t`; sleep 5; done
-          no_output_timeout: 10m
-      - run:
-          name: Run imm test
-          command: |
-            git clone https://github.com/bats-core/bats-core.git && cd bats-core && sudo ./install.sh /usr/local              
-            . ~/inference-model-manager/.venv/bin/activate
-            cd ~/inference-model-manager/scripts
-            bats imm_tests.bats
+          path: ~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs
       - run:
           name: Run tests
           command: |
             . ~/inference-model-manager/.venv/bin/activate
+            cd ~/inference-model-manager/scripts
+            . ./prepare_test_env.sh ${DOMAIN_NAME}
             cd ~/inference-model-manager/tests
             . run_test.sh
       - run:
@@ -298,7 +213,7 @@ jobs:
             sleep 3m
             kops delete cluster ${CLUSTER_NAME} --yes
             cd ~/inference-model-manager/installer/utils/route53
-            . .venvaws/bin/activate
+            . ~/inference-model-manager/.venv/bin/activate
             ./apply.sh DELETE ${ING_IP} ${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com
             deactivate
             sleep 150
@@ -314,7 +229,7 @@ jobs:
             sleep 3m
             kops delete cluster ${CLUSTER_NAME} --yes
             cd ~/inference-model-manager/installer/utils/route53
-            . .venvaws/bin/activate
+            . ~/inference-model-manager/.venv/bin/activate
             ./apply.sh DELETE ${ING_IP} ${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com
             deactivate
             sleep 150

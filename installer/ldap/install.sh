@@ -25,11 +25,11 @@ header "Installing LDAP"
 cd certs
 ./genereate_ldap_certs.sh
 cd ..
-if [ "$MGT_API_AUTHORIZATION" == "true" ]; then
-helm install --name $RELEASE_NAME -f ./customLdifFiles.yaml .
+if [[ "$MGT_API_AUTHORIZATION" == "true" ]]; then
+    helm install --name $RELEASE_NAME -f ./customLdifFiles.yaml .
 else
-# use test configuration
-helm install --name $RELEASE_NAME -f ../../../tests/deployment/ldap/customLdifFiles.yaml .
+    # use test configuration
+    helm install --name $RELEASE_NAME -f ../../../installer/ldap/customLdifFiles.yaml .
 fi
 show_result $? "LDAP installation succeded" "Failed to install LDAP"
 header "Waiting for ldap to be ready"
