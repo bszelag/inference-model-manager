@@ -293,6 +293,12 @@ jobs:
           command: |
             export PROJECT=`gcloud config get-value project`
             export ING_IP=$(kubectl get ing -o=jsonpath='{.items[0].status.loadBalancer.ingress..ip}' -n mgt-api)
+            export MGT_API_AUTHORIZATION="true"
+            . ~/inference-model-manager/.venv/bin/activate
+            cd ~/inference-model-manager/scripts
+            . ./prepare_test_env.sh ${DOMAIN_NAME}
+            . ./imm_utils.sh
+            get_token
             cd ~/inference-model-manager/installer
             ./uninstaller.sh -q
             sleep 3m
@@ -308,7 +314,13 @@ jobs:
           command: |
             export PROJECT=`gcloud config get-value project`
             export ING_IP=$(kubectl get ing -o=jsonpath='{.items[0].status.loadBalancer.ingress..ip}' -n mgt-api)
+            export MGT_API_AUTHORIZATION="true"
             sleep 30m
+            . ~/inference-model-manager/.venv/bin/activate
+            cd ~/inference-model-manager/scripts
+            . ./prepare_test_env.sh ${DOMAIN_NAME}
+            . ./imm_utils.sh
+            get_token
             cd ~/inference-model-manager/installer
             ./uninstaller.sh -q
             sleep 3m
@@ -379,8 +391,10 @@ jobs:
           name: Delete cluster on GKE
           when: on_success
           command: |
+            export MGT_API_AUTHORIZATION="true"
             . ~/inference-model-manager/.venv/bin/activate
             cd ~/inference-model-manager/scripts
+            . ./prepare_test_env.sh ${DOMAIN_NAME}
             . ./imm_utils.sh
             get_token admin
             cd ~/inference-model-manager/installer
@@ -391,8 +405,10 @@ jobs:
           name: Delete cluster on GKE on failed build
           when: on_fail
           command: |
+            export MGT_API_AUTHORIZATION="true"
             . ~/inference-model-manager/.venv/bin/activate
             cd ~/inference-model-manager/scripts
+            . ./prepare_test_env.sh ${DOMAIN_NAME}
             . ./imm_utils.sh
             get_token admin
             cd ~/inference-model-manager/installer
