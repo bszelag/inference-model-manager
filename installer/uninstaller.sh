@@ -43,7 +43,11 @@ helm_arr=()
 K8S_NS_ARR=()
 
 cd ../scripts
-./imm -k rm t default-tenant
+RESULT=`./imm -k rm t default-tenant`
+if [[ "$RESULT" =~ "Token not valid" ]]; then
+    echo "Your token is invalid, please log in and try again."
+    exit 1
+fi
 cd ../installer
 
 while read i; do

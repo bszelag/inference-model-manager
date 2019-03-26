@@ -379,6 +379,10 @@ jobs:
           name: Delete cluster on GKE
           when: on_success
           command: |
+            . ~/inference-model-manager/.venv/bin/activate
+            cd ~/inference-model-manager/scripts
+            . ./imm_utils.sh
+            get_token admin
             cd ~/inference-model-manager/installer
             ./uninstaller.sh -q
             sleep 3m
@@ -387,6 +391,10 @@ jobs:
           name: Delete cluster on GKE on failed build
           when: on_fail
           command: |
+            . ~/inference-model-manager/.venv/bin/activate
+            cd ~/inference-model-manager/scripts
+            . ./imm_utils.sh
+            get_token admin
             cd ~/inference-model-manager/installer
             ./uninstaller.sh -q
             sleep 3m
