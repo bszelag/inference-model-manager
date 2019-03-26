@@ -43,29 +43,45 @@ helm_arr=()
 K8S_NS_ARR=()
 
 cd ../scripts
-RESULT=`./imm -k rm t default-tenant`
-if [[ "$RESULT" =~ "Token not valid" ]]; then
-    echo "Your token is invalid, please log in and try again."
-    exit 1
-fi
-cd ../installer
-
-while read i; do
-   echo $i
-   RELEASE_NAME=`jq --arg namearg "Name" '.[$namearg]' <<< $i | tr -d '"'`
-   mark_release_to_be_deleted $RELEASE_NAME
-done <<<"$(jq -c '.[]' <<< $HELM_LIST)"
-
-
-echo "Releases marked to be deleted:"
-
-for i in "${helm_arr[@]}"; do echo "$i" ; done
-
-if [[ "$quiet" == "yes" ]]; then
-    for i in "${helm_arr[@]}"; do helm del --debug --purge $i ; done
+if [[ "$quiet" != "yes" ]]; then
+    echo "Uninstalling IMM. Following components will be removed:"
+    echo "*Default tenant with it's resources(models,endpoints etc.)"
+    echo "*Helm releases (mgt-api, crd etc.)"
+    echo "Are you sure you want to uninstall IMM? Y/n"
+    read DELETE_IMM
 else
-    read -p "Do you want to delete helm releases listed above Y/n?" DELETE_CHARTS
-    [[ $DELETE_CHARTS != "n" ]] && for i in "${helm_arr[@]}"; do helm del --debug --purge $i ; done
+    DELETE_IMM="Y"
 fi
+if [[ $DELETE_IMM == "Y" ]]; then
+    RESULT=`./imm -k rm t default-tenant`
+    if [[ "$RESULT" =~ "Tenant default-tenant deleted" ]]; then
+        cd ../installer
 
-kubectl delete ing minio-ingress || true
+        while read i; do
+           echo $i
+           RELEASE_NAME=`jq --arg namearg "Name" '.[$namearg]' <<< $i | tr -d '"'`
+           mark_release_to_be_deleted $RELEASE_NAME
+        done <<<"$(jq -c '.[]' <<< $HELM_LIST)"
+
+
+        echo "Releases marked to be deleted:"
+
+        for i in "${helm_arr[@]}"; do echo "$i" ; done
+
+        if [[ "$quiet" == "yes" ]]; then
+            for i in "${helm_arr[@]}"; do helm del --debug --purge $i ; done
+        else
+            read -p "Do you want to delete helm releases listed above Y/n?" DELETE_CHARTS
+            [[ $DELETE_CHARTS != "n" ]] && for i in "${helm_arr[@]}"; do helm del --debug --purge $i ; done
+        fi
+
+        kubectl delete ing minio-ingress || true
+        echo "IMM uninstalled successfully."
+    elif [[ "$RESULT" =~ "Token not valid" ]]; then
+        echo "Uninstallation aborted. Your token is invalid, please log in and try again."
+    else
+        echo "Uninstallation aborted. Unexpected error occurred during default-tenant removal."
+    fi
+else
+    echo "Quiting uninstaller"
+fi
