@@ -33,12 +33,12 @@ cd ../scripts
 
 EXPECTED="There are no tenants present on platform" 
 
-while [[ "$TENANTS" != $EXPECTED ]]; do 
+while [[ "$TENANTS" != $EXPECTED ]]; do
         get_token admin
-        TENANTS=`./imm ls t`; 
+        TENANTS=`./imm ls t`;
         if [[ "$TENANTS" != $EXPECTED ]]; then
-          echo "IMM not ready";         
-          sleep 5; 
+          echo "IMM not ready";
+          sleep 5;
         fi
 done
 
