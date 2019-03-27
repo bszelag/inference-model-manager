@@ -83,5 +83,5 @@ if [[ $DELETE_IMM == "Y" ]]; then
         echo "Uninstallation aborted. Unexpected error occurred during default-tenant removal."
     fi
 else
-    echo "Quiting uninstaller"
+    echo "Quiting uninstaller."
 fi
