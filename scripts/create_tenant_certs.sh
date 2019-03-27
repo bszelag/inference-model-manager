@@ -14,7 +14,7 @@
 # limitations under the License.
 
 TENANT_NAME=$1
-TENANT_CERT_DIR=`pwd`/certs/$TENANT_NAME
+TENANT_CERTS_DIR=`pwd`/certs/$TENANT_NAME
 mkdir -p `pwd`/certs
-. ./generate_certs.sh $TENANT_CERT_DIR
+. ./generate_certs.sh $TENANT_CERTS_DIR
 cd -
