@@ -27,6 +27,7 @@ Options:
 	c - path to config file
 	k - allowing connection to management api endpoints with not trusted certificates
 	o - login without launching browser (offline)
+	r - prefix of installed IMM platform
 Examples:
 	.${0##*/} -a mgmt.example.com -p 443 -v create tenant mytenant
 	.${0##*/} create t mytenant myscope
@@ -50,6 +51,7 @@ Environment variables:
 	TENANT_RESOURCES - quota used for tenant creation
 	ENDPOINT_RESOURCES - quota used for endpoint creation
 	IMM_TOKEN - token required to perform request, by default it is provided within IMM_CONFIG_PATH file
+	RELEASE_PREFIX - prefix of installed IMM platform, by default it is 'imm'
 EOF
 }
 
@@ -59,8 +61,9 @@ VERBOSE=0
 OPTIND=1
 DEFAULT_CFG_FILE=~/.immconfig
 IMM_CONFIG_PATH=${IMM_CONFIG_PATH:=${DEFAULT_CFG_FILE}}
+RELEASE_PREFIX="${RELEASE_PREFIX:=imm}"
 
-while getopts "okhva:p:c:" opt; do
+while getopts "okhvar:p:c:" opt; do
 	case $opt in
 		h)	show_help
 			exit 0
@@ -80,6 +83,8 @@ while getopts "okhva:p:c:" opt; do
 			;;
 		o)  OFFLINE=--offline
 			;;
+		r) export RELEASE_PREFIX=$OPTARG
+		    ;;
 		*)	show_help >&2
 			exit 1
 			;;
