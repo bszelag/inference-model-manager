@@ -38,23 +38,34 @@ CHARTS_LIST="$RELEASE_PREFIX-mgt-api $RELEASE_PREFIX-crd $RELEASE_PREFIX-dex $RE
 HELM_LS_OUTPUT=`helm ls --output json`
 HELM_LIST=`jq --arg namearg "Releases" '.[$namearg]' <<< $HELM_LS_OUTPUT`
 K8S_NS_OUTPUT=`kubectl get ns --output=json`
-K8S_NS_LIST=`jq --arg namearg "items" '.[$namearg]' <<< $K8S_NS_OUTPUT`
+K8S_NAMESPACES=`echo $K8S_NS_OUTPUT | jq '.items[].metadata.name'`
 helm_arr=()
 K8S_NS_ARR=()
+
+[[ $K8S_NAMESPACES =~ "default-tenant" ]] && SINGLE_TENANT=1 || SINGLE_TENANT=0
 
 cd ../scripts
 if [[ "$quiet" != "yes" ]]; then
     echo "Uninstalling IMM. Following components will be removed:"
-    echo "*Default tenant with it's resources(models,endpoints etc.)"
     echo "*Helm releases (mgt-api, crd etc.)"
+    if [[ $SINGLE_TENANT == 1 ]]; then
+        echo "*Default tenant with it's resources(models,endpoints etc.)"
+    fi
     echo "Are you sure you want to uninstall IMM? Y/n"
     read DELETE_IMM
 else
     DELETE_IMM="Y"
 fi
 if [[ $DELETE_IMM == "Y" ]]; then
-    RESULT=`./imm -k rm t default-tenant`
-    if [[ "$RESULT" =~ "Tenant default-tenant deleted" ]]; then
+
+    if [[ $SINGLE_TENANT == 1 ]]; then
+        echo "Deleting default-tenant..."
+        RESULT=`./imm -k rm t default-tenant`
+    else
+        RESULT=0
+    fi
+
+    if [[ "$RESULT" =~ "Tenant default-tenant deleted" || $RESULT == 0 ]]; then
         cd ../installer
 
         while read i; do
@@ -62,7 +73,6 @@ if [[ $DELETE_IMM == "Y" ]]; then
            RELEASE_NAME=`jq --arg namearg "Name" '.[$namearg]' <<< $i | tr -d '"'`
            mark_release_to_be_deleted $RELEASE_NAME
         done <<<"$(jq -c '.[]' <<< $HELM_LIST)"
-
 
         echo "Releases marked to be deleted:"
 
