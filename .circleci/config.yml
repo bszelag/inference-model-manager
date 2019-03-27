@@ -188,10 +188,21 @@ jobs:
           name: Run tests
           command: |
             . ~/inference-model-manager/.venv/bin/activate
+            cd ~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs
+            . script-wrong-certs.sh
             cd ~/inference-model-manager/scripts
+            export B64ENCODE="base64 -w0"
             . ./prepare_test_env.sh ${DOMAIN_NAME}
-            echo 'export REQUESTS_CA_BUNDLE=~/inference-model-manager/scripts/ca.pem' >> $BASH_ENV
-            echo 'export CERT=`cat ~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs/ca-cert-tf.crt | base64 -w0`' >> $BASH_ENV
+            sudo cp ~/inference-model-manager/scripts/ca.pem /usr/local/share/ca-certificates/ca.crt
+            sudo update-ca-certificates
+            echo $CERT
+            export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+            export CERT_BAD_CLIENT=~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs/bad-client.crt
+            export CERT_BAD_CLIENT_KEY=~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs/bad-client.key
+            export CERT_CLIENT=~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs/client-tf.crt
+            export CERT_CLIENT_KEY=~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs/client-tf.key
+            export CERT_SERVER=~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs/server-tf.crt
+            export CERT_SERVEY_KEY=~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs/server-tf.key
             cd ~/inference-model-manager/tests
             . run_test.sh
       - run:
@@ -209,14 +220,14 @@ jobs:
           when: on_success
           command: |
             export PROJECT=`gcloud config get-value project`
-            export ING_IP=$(kubectl get ing -o=jsonpath='{.items[0].status.loadBalancer.ingress..ip}' -n mgt-api)
+            export ING_IP=`kubectl get services -n ingress-nginx|grep ingress-nginx|awk '{ print $(NF-2) }'`
             cd ~/inference-model-manager/installer
             ./uninstaller.sh -q
             sleep 3m
             kops delete cluster ${CLUSTER_NAME} --yes
             cd ~/inference-model-manager/installer/utils/route53
             . ~/inference-model-manager/.venv/bin/activate
-            ./apply.sh DELETE ${ING_IP} ${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com
+            ./apply.sh DELETE ${ING_IP} ${DOMAIN_NAME}
             deactivate
             sleep 150
       - run:
@@ -224,7 +235,7 @@ jobs:
           when: on_fail
           command: |
             export PROJECT=`gcloud config get-value project`
-            export ING_IP=$(kubectl get ing -o=jsonpath='{.items[0].status.loadBalancer.ingress..ip}' -n mgt-api)
+            export ING_IP=`kubectl get services -n ingress-nginx|grep ingress-nginx|awk '{ print $(NF-2) }'`
             sleep 30m
             cd ~/inference-model-manager/installer
             ./uninstaller.sh -q
@@ -232,7 +243,7 @@ jobs:
             kops delete cluster ${CLUSTER_NAME} --yes
             cd ~/inference-model-manager/installer/utils/route53
             . ~/inference-model-manager/.venv/bin/activate
-            ./apply.sh DELETE ${ING_IP} ${CLUSTER_NAME_SHORT}.nlpnp.adsdcsp.com
+            ./apply.sh DELETE ${ING_IP} ${DOMAIN_NAME}
             deactivate
             sleep 150
           no_output_timeout: 32m
@@ -296,18 +307,30 @@ jobs:
           name: Delete cluster on GKE
           when: on_success
           command: |
+            export ING_IP=`kubectl get services -n ingress-nginx|grep ingress-nginx|awk '{ print $(NF-2) }'`
             cd ~/inference-model-manager/installer
             ./uninstaller.sh -q
             sleep 3m
             echo y | gcloud container clusters delete gke-imm-${SHORT_SHA1}-${CIRCLE_BRANCH} --zone us-west1-a
+            cd ~/inference-model-manager/installer/utils/route53
+            . ~/inference-model-manager/.venv/bin/activate
+            ./apply.sh DELETE ${ING_IP} ${DOMAIN_NAME}
+            deactivate
+            sleep 150
       - run:
           name: Delete cluster on GKE on failed build
           when: on_fail
           command: |
+            export ING_IP=`kubectl get services -n ingress-nginx|grep ingress-nginx|awk '{ print $(NF-2) }'`
             cd ~/inference-model-manager/installer
             ./uninstaller.sh -q
             sleep 3m
             echo y | gcloud container clusters delete gke-imm-${SHORT_SHA1}-${CIRCLE_BRANCH} --zone us-west1-a
+            cd ~/inference-model-manager/installer/utils/route53
+            . ~/inference-model-manager/.venv/bin/activate
+            ./apply.sh DELETE ${ING_IP} ${DOMAIN_NAME}
+            deactivate
+            sleep 150
 workflows:
   version: 2
   deploy-test:
