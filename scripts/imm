@@ -168,6 +168,7 @@ case "$OPERATION" in
 					"https://${MANAGEMENT_API_ADDRESS}:${MANAGEMENT_API_PORT}/tenants"'
 				[[ ${VERBOSE} == 1 ]] && echo $CURL
 				[[ ${VERBOSE} == 2 ]] && eval echo $CURL
+				./delete_tenant_certs.sh $PARAM_1
 				eval "$CURL"
 				;;
 			endpoint | e)

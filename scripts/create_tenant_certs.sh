@@ -13,18 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-generate_client_certs() {
- . ./generate_certs.sh
-}
-
 TENANT_NAME=$1
-TENANT_CERT_DIR=./certs/$TENANT_NAME
-mkdir -p $TENANT_CERT_DIR
-cp ca.conf $TENANT_CERT_DIR
-cp generate_certs.sh $TENANT_CERT_DIR
-cd $TENANT_CERT_DIR
-generate_client_certs
-echo "Client certificates for inference are stored in `pwd`"
-rm generate_certs.sh
+TENANT_CERT_DIR=`pwd`/certs/$TENANT_NAME
+mkdir -p `pwd`/certs
+. ./generate_certs.sh $TENANT_CERT_DIR
 cd -

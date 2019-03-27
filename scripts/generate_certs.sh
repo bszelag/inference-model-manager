@@ -15,6 +15,12 @@
 #
 
 # Generate a CA to be used for creating client certificates
+
+TENANT_CERTS_DIR=$1
+mkdir -p $TENANT_CERTS_DIR
+cp ca.conf $TENANT_CERTS_DIR
+cd $TENANT_CERTS_DIR
+
 openssl genrsa -out ca-cert-tf.key 4096
 openssl req -new -x509 -days 365 -key ca-cert-tf.key -out ca-cert-tf.crt -subj "/CN=ca"
 # Generate client key and certificate authorizing access to inference endpoints. Change the CN as needed.
@@ -31,3 +37,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 else
     export CERT=`cat ca-cert-tf.crt|base64 -w0`
 fi
+echo "Client certificates for inference are stored in $TENANT_CERTS_DIR"
+
+cd -
