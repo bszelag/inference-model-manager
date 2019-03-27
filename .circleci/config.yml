@@ -190,6 +190,8 @@ jobs:
             . ~/inference-model-manager/.venv/bin/activate
             cd ~/inference-model-manager/scripts
             . ./prepare_test_env.sh ${DOMAIN_NAME}
+            echo 'export REQUESTS_CA_BUNDLE=~/inference-model-manager/scripts/ca.pem' >> $BASH_ENV
+            echo 'export CERT=`cat ~/inference-model-manager/installer/helm-temp-dir/management-api-subchart/certs/ca-cert-tf.crt | base64 -w0`' >> $BASH_ENV
             cd ~/inference-model-manager/tests
             . run_test.sh
       - run:
