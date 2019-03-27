@@ -179,7 +179,7 @@ jobs:
             else
                export GCE_REGION=us-west1
             fi
-            ./install.sh -d ${DOMAIN_NAME} -k ${CLUSTER_NAME_SHORT} -z ${GCE_REGION} -t
+            ./install.sh -d ${DOMAIN_NAME} -k ${CLUSTER_NAME_SHORT} -z ${GCE_REGION}
       - store_artifacts:
           path: ~/inference-model-manager/installer/helm-temp-dir/dex-subchart/certs
       - store_artifacts:
