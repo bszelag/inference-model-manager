@@ -44,7 +44,7 @@ K8S_NS_ARR=()
 
 cd ../scripts
 ./imm -k rm t default-tenant
-rm -rf ./$IMM_RELEASE_PREFIX
+rm -rf ./certs/$IMM_RELEASE_PREFIX
 cd ../installer
 
 while read i; do

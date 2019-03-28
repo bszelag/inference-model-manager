@@ -1,4 +1,5 @@
 #!/bin/bash
+#
 # Copyright (c) 2019 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +18,4 @@ TENANT_NAME=$1
 TENANT_CERTS_DIR=`pwd`/certs/$IMM_RELEASE_PREFIX/$TENANT_NAME
 . ./generate_certs.sh $TENANT_CERTS_DIR
 
-PWD=`pwd`
-export CERT=`cat $PWD/certs/$IMM_RELEASE_PREFIX/$TENANT_NAME/ca-cert-tf.crt | $B64ENCODE`
 cd -
