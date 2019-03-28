@@ -37,6 +37,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 else
     export CERT=`cat ca-cert-tf.crt|base64 -w0`
 fi
+echo $CERT
 echo "Client certificates for inference are stored in $TENANT_CERTS_DIR"
 
 cd -
