@@ -127,6 +127,7 @@ TENANT_RESOURCES=${TENANT_RESOURCES:="{\"requests.cpu\": \"2\", \"requests.memor
 
 ENDPOINT_RESOURCES=${ENDPOINT_RESOURCES:="{\"requests.cpu\": \"0\", \"requests.memory\": \"0\"}"}
 
+echo $CERT
 case "$OPERATION" in
 	create | c) 
 		case "$RESOURCE" in
