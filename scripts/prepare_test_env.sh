@@ -38,5 +38,3 @@ fi
 export DEX_NAMESPACE="dex"
 export MGT_NAMESPACE="mgt-api"
 export DEX_URL=https://${DEX_DOMAIN_NAME}:443
-export HELM_INSTALL_DIR="../installer/helm-temp-dir"
-export CERT=`cat $HELM_INSTALL_DIR/management-api-subchart/certs/ca-cert-tf.crt | $B64ENCODE`
