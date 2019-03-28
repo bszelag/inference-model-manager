@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-
+RELEASE_PREFIX="${RELEASE_PREFIX:=imm}"
 export TENANT_NAME="tenanttest"
 export ENDPOINT_NAME="endpointtest"
 export SERVING_NAME="tf-serving"
@@ -30,7 +30,7 @@ export NUMPY_PATH="10_v1_imgs.npy"
 export IMAGE_LIST="images/airliner.jpeg,images/arctic-fox.jpeg,images/bee.jpeg,images/golden_retriever.jpeg,images/gorilla.jpeg,images/magnetic_compass.jpeg,images/peacock.jpeg,images/pelican.jpeg,images/snail.jpeg,images/zebra.jpeg"
 export LABEL_LIST=" airliner, Arctic fox, bee, golden retriever, gorilla, magnetic compass, peacock, pelican, snail, zebra"
 export JPEGS_INFERENCE_ACCURACY=0
-export TENANT_CERTS_DIR="`pwd`/certs/$TENANT_NAME"
+export TENANT_CERTS_DIR="`pwd`/certs/$RELEASE_PREFIX/$TENANT_NAME"
 export SERVER_CERT="$TENANT_CERTS_DIR/server-tf.crt"
 export CLIENT_CERT="$TENANT_CERTS_DIR/client-tf.crt"
 export CLIENT_KEY="$TENANTS_CERTS_DIR/client-tf.key"
