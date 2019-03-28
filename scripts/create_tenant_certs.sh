@@ -14,6 +14,6 @@
 # limitations under the License.
 
 TENANT_NAME=$1
-TENANT_CERTS_DIR=`pwd`/certs/$RELEASE_PREFIX/$TENANT_NAME
+TENANT_CERTS_DIR=`pwd`/certs/$IMM_RELEASE_PREFIX/$TENANT_NAME
 . ./generate_certs.sh $TENANT_CERTS_DIR
 cd -

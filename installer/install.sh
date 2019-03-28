@@ -53,7 +53,7 @@ while getopts "h?qsk:d:z:g:p:f:A:S:U:V:R:t" opt; do
         ;;
     p)  export PROXY=$OPTARG
         ;;
-    f)  export RELEASE_PREFIX=$OPTARG
+    f)  export IMM_RELEASE_PREFIX=$OPTARG
         ;;
     A)  export MINIO_ACCESS_KEY=$OPTARG
         ;;

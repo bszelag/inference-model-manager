@@ -51,7 +51,7 @@ Environment variables:
 	TENANT_RESOURCES - quota used for tenant creation
 	ENDPOINT_RESOURCES - quota used for endpoint creation
 	IMM_TOKEN - token required to perform request, by default it is provided within IMM_CONFIG_PATH file
-	RELEASE_PREFIX - prefix of installed IMM platform, by default it is 'imm'
+	IMM_RELEASE_PREFIX - prefix of installed IMM platform, by default it is 'imm'
 EOF
 }
 
@@ -61,7 +61,7 @@ VERBOSE=0
 OPTIND=1
 DEFAULT_CFG_FILE=~/.immconfig
 IMM_CONFIG_PATH=${IMM_CONFIG_PATH:=${DEFAULT_CFG_FILE}}
-RELEASE_PREFIX="${RELEASE_PREFIX:=imm}"
+IMM_RELEASE_PREFIX="${IMM_RELEASE_PREFIX:=imm}"
 
 while getopts "okhvar:p:c:" opt; do
 	case $opt in
@@ -83,7 +83,7 @@ while getopts "okhvar:p:c:" opt; do
 			;;
 		o)  OFFLINE=--offline
 			;;
-		r) export RELEASE_PREFIX=$OPTARG
+		r) export IMM_RELEASE_PREFIX=$OPTARG
 		    ;;
 		*)	show_help >&2
 			exit 1
