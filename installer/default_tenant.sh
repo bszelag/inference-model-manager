@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Copyright (c) 2019 Intel Corporation
 #
@@ -13,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#!/bin/bash
 
 DOMAIN_NAME=$1
 PROXY=$2
@@ -34,6 +34,7 @@ cd ../scripts
 EXPECTED="There are no tenants present on platform" 
 
 while [[ "$TENANTS" != $EXPECTED ]]; do
+	echo $TENANTS
         get_token admin
         TENANTS=`./imm ls t`;
         if [[ "$TENANTS" != $EXPECTED ]]; then
